@@ -1,0 +1,194 @@
+version: "3.9"
+
+# ==============================================================================
+# LANGFUSE DOCKER COMPOSE - CORPORATE ENVIRONMENT
+# ==============================================================================
+# This docker-compose file is configured for corporate environments where
+# external Docker registries are restricted.
+#
+# IMPORTANT: Replace all image references with your internal registry URLs
+# Search for "REPLACE:" comments to find where changes are needed
+# ==============================================================================
+
+services:
+  # PostgreSQL Database
+  postgres:
+    # REPLACE: Update with your internal registry URL
+    # Example: your-registry.company.com/postgres:16-alpine
+    image: postgres:16-alpine
+    container_name: langfuse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: langfuse
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse_password_change_me
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - langfuse-network
+
+  # Redis Cache
+  redis:
+    # REPLACE: Update with your internal registry URL
+    # Example: your-registry.company.com/redis:7-alpine
+    image: redis:7-alpine
+    container_name: langfuse-redis
+    restart: unless-stopped
+    command: redis-server --requirepass redis_password_change_me
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - langfuse-network
+
+  # MinIO Object Storage (S3-compatible)
+  minio:
+    # REPLACE: Update with your internal registry URL
+    # Example: your-registry.company.com/minio/minio:latest
+    image: minio/minio:latest
+    container_name: langfuse-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password_change_me
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Console
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - langfuse-network
+
+  # Langfuse Web Application
+  langfuse-web:
+    # REPLACE: Update with your internal registry URL
+    # Example: your-registry.company.com/langfuse/langfuse:latest
+    image: langfuse/langfuse:latest
+    container_name: langfuse-web
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://langfuse:langfuse_password_change_me@postgres:5432/langfuse
+      DIRECT_URL: postgresql://langfuse:langfuse_password_change_me@postgres:5432/langfuse
+
+      # Redis Configuration
+      REDIS_CONNECTION_STRING: redis://:redis_password_change_me@redis:6379
+
+      # NextAuth Configuration
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: your-nextauth-secret-min-32-chars-change-me
+
+      # Salt for API key hashing
+      SALT: your-salt-secret-change-me
+
+      # S3/MinIO Configuration for File Storage
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY_ID: minio_admin
+      S3_SECRET_ACCESS_KEY: minio_password_change_me
+      S3_BUCKET_NAME: langfuse
+      S3_REGION: us-east-1
+
+      # Telemetry (set to 0 to disable)
+      TELEMETRY_ENABLED: "0"
+
+      # Node Environment
+      NODE_ENV: production
+
+      # Optional: Email Configuration (uncomment and configure if needed)
+      # EMAIL_FROM_ADDRESS: noreply@your-company.com
+      # SMTP_CONNECTION_URL: smtp://user:pass@smtp.your-company.com:587
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/public/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - langfuse-network
+
+  # Langfuse Worker (for background jobs)
+  langfuse-worker:
+    # REPLACE: Update with your internal registry URL
+    # Example: your-registry.company.com/langfuse/langfuse:latest
+    image: langfuse/langfuse:latest
+    container_name: langfuse-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://langfuse:langfuse_password_change_me@postgres:5432/langfuse
+      DIRECT_URL: postgresql://langfuse:langfuse_password_change_me@postgres:5432/langfuse
+
+      # Redis Configuration
+      REDIS_CONNECTION_STRING: redis://:redis_password_change_me@redis:6379
+
+      # Salt for API key hashing
+      SALT: your-salt-secret-change-me
+
+      # S3/MinIO Configuration
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY_ID: minio_admin
+      S3_SECRET_ACCESS_KEY: minio_password_change_me
+      S3_BUCKET_NAME: langfuse
+      S3_REGION: us-east-1
+
+      # Telemetry
+      TELEMETRY_ENABLED: "0"
+
+      # Node Environment
+      NODE_ENV: production
+    command: node /app/worker/dist/src/index.js
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'node.*worker'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - langfuse-network
+
+networks:
+  langfuse-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
