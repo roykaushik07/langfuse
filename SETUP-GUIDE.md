@@ -31,7 +31,8 @@ Ensure the following images are available in your internal Docker registry:
 |-----------|--------------|-------------|
 | Langfuse Web | `langfuse/langfuse:latest` | Main Langfuse application |
 | Langfuse Worker | `langfuse/langfuse:latest` | Background worker (same image) |
-| PostgreSQL | `postgres:16-alpine` | Database |
+| PostgreSQL | `postgres:16-alpine` | Transactional database |
+| ClickHouse | `clickhouse/clickhouse-server:latest` | OLAP database for traces/observations (v24.3+) |
 | Redis | `redis:7-alpine` | Cache and session store |
 | MinIO | `minio/minio:latest` | S3-compatible object storage |
 
@@ -65,17 +66,22 @@ image: your-registry.company.com/postgres:16-alpine
    image: your-registry.company.com/redis:7-alpine
    ```
 
-3. **MinIO** (service: `minio`)
+3. **ClickHouse** (service: `clickhouse`)
+   ```yaml
+   image: your-registry.company.com/clickhouse/clickhouse-server:latest
+   ```
+
+4. **MinIO** (service: `minio`)
    ```yaml
    image: your-registry.company.com/minio/minio:latest
    ```
 
-4. **Langfuse Web** (service: `langfuse-web`)
+5. **Langfuse Web** (service: `langfuse-web`)
    ```yaml
    image: your-registry.company.com/langfuse/langfuse:latest
    ```
 
-5. **Langfuse Worker** (service: `langfuse-worker`)
+6. **Langfuse Worker** (service: `langfuse-worker`)
    ```yaml
    image: your-registry.company.com/langfuse/langfuse:latest
    ```
@@ -89,18 +95,21 @@ If you need to pull and push images to your internal registry:
 docker pull langfuse/langfuse:latest
 docker pull postgres:16-alpine
 docker pull redis:7-alpine
+docker pull clickhouse/clickhouse-server:latest
 docker pull minio/minio:latest
 
 # Tag for your internal registry
 docker tag langfuse/langfuse:latest your-registry.company.com/langfuse/langfuse:latest
 docker tag postgres:16-alpine your-registry.company.com/postgres:16-alpine
 docker tag redis:7-alpine your-registry.company.com/redis:7-alpine
+docker tag clickhouse/clickhouse-server:latest your-registry.company.com/clickhouse/clickhouse-server:latest
 docker tag minio/minio:latest your-registry.company.com/minio/minio:latest
 
 # Push to internal registry
 docker push your-registry.company.com/langfuse/langfuse:latest
 docker push your-registry.company.com/postgres:16-alpine
 docker push your-registry.company.com/redis:7-alpine
+docker push your-registry.company.com/clickhouse/clickhouse-server:latest
 docker push your-registry.company.com/minio/minio:latest
 ```
 

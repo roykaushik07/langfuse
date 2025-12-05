@@ -84,6 +84,35 @@ services:
     networks:
       - langfuse-network
 
+  # ClickHouse OLAP Database (for traces, observations, scores)
+  clickhouse:
+    # REPLACE: Update with your internal registry URL
+    # Example: your-registry.company.com/clickhouse/clickhouse-server:latest
+    image: clickhouse/clickhouse-server:latest
+    container_name: langfuse-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9002:9000"  # Native TCP interface (mapped to avoid conflict with MinIO)
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - langfuse-network
+
   # Langfuse Web Application
   langfuse-web:
     # REPLACE: Update with your internal registry URL
@@ -98,6 +127,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     ports:
       - "3000:3000"
     environment:
@@ -107,6 +138,14 @@ services:
 
       # Redis Configuration
       REDIS_CONNECTION_STRING: ${REDIS_CONNECTION_STRING}
+
+      # ClickHouse Configuration
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL:-http://clickhouse:8123}
+      CLICKHOUSE_MIGRATION_URL: ${CLICKHOUSE_MIGRATION_URL:-clickhouse://clickhouse:9000}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
+      CLICKHOUSE_CLUSTER_ENABLED: ${CLICKHOUSE_CLUSTER_ENABLED:-false}
 
       # NextAuth Configuration
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
@@ -154,6 +193,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     environment:
       # Database Configuration
       DATABASE_URL: ${DATABASE_URL}
@@ -161,6 +202,14 @@ services:
 
       # Redis Configuration
       REDIS_CONNECTION_STRING: ${REDIS_CONNECTION_STRING}
+
+      # ClickHouse Configuration
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL:-http://clickhouse:8123}
+      CLICKHOUSE_MIGRATION_URL: ${CLICKHOUSE_MIGRATION_URL:-clickhouse://clickhouse:9000}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
+      CLICKHOUSE_CLUSTER_ENABLED: ${CLICKHOUSE_CLUSTER_ENABLED:-false}
 
       # Salt for API key hashing
       SALT: ${SALT}
@@ -197,4 +246,6 @@ volumes:
   redis_data:
     driver: local
   minio_data:
+    driver: local
+  clickhouse_data:
     driver: local

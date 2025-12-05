@@ -44,6 +44,7 @@ Open `docker-compose.yml` and replace all images with your internal registry URL
 |---------|-----------------|
 | postgres | `postgres:16-alpine` |
 | redis | `redis:7-alpine` |
+| clickhouse | `clickhouse/clickhouse-server:latest` |
 | minio | `minio/minio:latest` |
 | langfuse-web | `langfuse/langfuse:latest` |
 | langfuse-worker | `langfuse/langfuse:latest` |
@@ -80,7 +81,8 @@ This setup includes:
 
 - **Langfuse Web** (port 3000) - Main application
 - **Langfuse Worker** - Background job processor
-- **PostgreSQL 16** (port 5432) - Database
+- **PostgreSQL 16** (port 5432) - Transactional database
+- **ClickHouse** (ports 8123, 9002) - OLAP database for traces/observations
 - **Redis 7** (port 6379) - Cache
 - **MinIO** (ports 9000, 9001) - S3-compatible storage
 

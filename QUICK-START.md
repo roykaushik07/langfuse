@@ -36,14 +36,15 @@ This means:
 
 ### 1. Update Docker Images
 
-Edit `docker-compose.yml` and replace **5 image URLs** with your internal registry:
+Edit `docker-compose.yml` and replace **6 image URLs** with your internal registry:
 
 ```yaml
 # Find these lines and replace:
-image: postgres:16-alpine              → your-registry.company.com/postgres:16-alpine
-image: redis:7-alpine                  → your-registry.company.com/redis:7-alpine
-image: minio/minio:latest              → your-registry.company.com/minio/minio:latest
-image: langfuse/langfuse:latest        → your-registry.company.com/langfuse/langfuse:latest
+image: postgres:16-alpine                     → your-registry.company.com/postgres:16-alpine
+image: redis:7-alpine                         → your-registry.company.com/redis:7-alpine
+image: clickhouse/clickhouse-server:latest    → your-registry.company.com/clickhouse/clickhouse-server:latest
+image: minio/minio:latest                     → your-registry.company.com/minio/minio:latest
+image: langfuse/langfuse:latest               → your-registry.company.com/langfuse/langfuse:latest
 (appears twice - web and worker)
 ```
 
@@ -73,6 +74,9 @@ POSTGRES_PASSWORD=YOUR_STRONG_PASSWORD_HERE
 
 # Redis password
 REDIS_PASSWORD=YOUR_STRONG_PASSWORD_HERE
+
+# ClickHouse password
+CLICKHOUSE_PASSWORD=YOUR_STRONG_PASSWORD_HERE
 
 # NextAuth secret (paste output from: openssl rand -base64 32)
 NEXTAUTH_SECRET=PASTE_GENERATED_SECRET_HERE
@@ -182,6 +186,14 @@ DIRECT_URL=postgresql://langfuse:P@ssw0rd123!Secure@postgres:5432/langfuse
 # Redis
 REDIS_PASSWORD=R3dis!P@ssw0rd456
 REDIS_CONNECTION_STRING=redis://:R3dis!P@ssw0rd456@redis:6379
+
+# ClickHouse
+CLICKHOUSE_USER=clickhouse
+CLICKHOUSE_PASSWORD=Click!H0use789!Secure
+CLICKHOUSE_DB=default
+CLICKHOUSE_URL=http://clickhouse:8123
+CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000
+CLICKHOUSE_CLUSTER_ENABLED=false
 
 # NextAuth
 NEXTAUTH_URL=http://localhost:3000
