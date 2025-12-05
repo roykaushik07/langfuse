@@ -4,13 +4,17 @@ Complete Docker setup for running Langfuse locally in corporate environments wit
 
 ## Quick Start
 
+**See [QUICK-START.md](QUICK-START.md) for detailed step-by-step instructions.**
+
 ```bash
 # 1. Update docker-compose.yml with your internal registry URLs
-#    (Search for "REPLACE:" comments)
+#    (Search for "REPLACE:" comments - 5 images to update)
 
-# 2. Configure environment
+# 2. Configure environment (all passwords in ONE place)
 cp .env.example .env
-# Edit .env and update passwords and secrets
+openssl rand -base64 32  # For NEXTAUTH_SECRET
+openssl rand -base64 32  # For SALT
+# Edit .env with generated secrets and passwords
 
 # 3. Start services
 docker-compose up -d
@@ -24,9 +28,10 @@ open http://localhost:3000
 
 ## Files Included
 
-- **docker-compose.yml** - Complete Docker Compose configuration
+- **docker-compose.yml** - Complete Docker Compose configuration (reads from .env)
 - **.env.example** - Environment variables template
 - **init-minio.sh** - MinIO bucket initialization script
+- **QUICK-START.md** - Step-by-step setup instructions ⭐ START HERE
 - **SETUP-GUIDE.md** - Comprehensive setup and troubleshooting guide
 
 ## What You Need to Do
